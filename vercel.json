@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/:user/:file*", "destination": "/api/raw?user=:user&file=:file" }
+    { 
+      "source": "/api/raw/:path*", 
+      "destination": "/api/raw?path=:path*" 
+    }
   ]
 }
