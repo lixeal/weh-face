@@ -1,5 +1,5 @@
 {
-  "name": "weh-face",
+  "name": "weh-face-backend",
   "version": "1.0.0",
   "dependencies": {
     "@octokit/rest": "^20.0.0",
