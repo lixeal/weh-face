@@ -4,15 +4,18 @@ import bcrypt from "bcryptjs";
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 export default async function handler(req, res) {
-    // Эксплоиты иногда шлют данные странно, проверяем все варианты
-    const data = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    
-    // Вытаскиваем юзера и пароль (проверяем разные ключи на всякий случай)
+    // Важно: читаем данные независимо от того, как их прислал эксплоит
+    let data = req.body;
+    if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { /* ignore */ }
+    }
+
     const username = data.user || data.username;
     const password = data.pass || data.password;
 
+    // Проверка, чтобы bcrypt не падал
     if (!username || !password) {
-        return res.status(400).json({ error: "Missing username or password in request" });
+        return res.status(400).json({ error: "Missing username or password" });
     }
 
     try {
@@ -26,10 +29,8 @@ export default async function handler(req, res) {
             content: Buffer.from(JSON.stringify({ username, password: hashed })).toString('base64')
         });
 
-        // Возвращаем спец-строку для нашего Lua
-        const authData = JSON.stringify({ username, password });
-        res.status(200).send(`AUTH_SUCCESS|${authData}`);
+        res.status(200).send(`AUTH_SUCCESS|{"username":"${username}","password":"${password}"}`);
     } catch (e) {
-        res.status(500).send("Server Error: " + e.message);
+        res.status(500).json({ error: e.message });
     }
 }
