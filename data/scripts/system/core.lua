@@ -1,77 +1,53 @@
 local HttpService = game:GetService("HttpService")
 local infoPath = "auraware/wf/info.json"
 
--- Универсальная функция запроса для эксплоитов
-local function internal_request(options)
-    local req = (syn and syn.request) or (http and http.request) or http_request or request
-    if req then
-        return req(options)
+local function internal_request(url, payload)
+    local jsonBody = HttpService:JSONEncode(payload)
+    local req_func = (syn and syn.request) or (http and http.request) or http_request or request
+    
+    if req_func then
+        local res = req_func({
+            Url = url,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json",
+                ["Accept"] = "application/json"
+            },
+            Body = jsonBody
+        })
+        return {Success = (res.StatusCode == 200), Body = res.Body}
+    else
+        -- Если нет спец-функций, пробуем обычный (может не сработать из-за защиты)
+        local success, res = pcall(function()
+            return HttpService:PostAsync(url, jsonBody, Enum.HttpContentType.ApplicationJson)
+        end)
+        return {Success = success, Body = res}
     end
-    -- Если кастомных функций нет, пробуем стандарт (может выбить ошибку)
-    local success, res = pcall(function()
-        return HttpService:PostAsync(options.Url, options.Body, Enum.HttpContentType.ApplicationJson)
-    end)
-    return {Success = success, Body = res}
 end
 
 local wf = {}
 
-local function send(url, payload)
-    local response = internal_request({
-        Url = url,
-        Method = "POST",
-        Headers = {["Content-Type"] = "application/json"},
-        Body = HttpService:JSONEncode(payload)
-    })
-
-    if response.Success or (response.StatusCode and response.StatusCode == 200) then
-        local body = response.Body
-        
-        -- Проверка на AUTH_SUCCESS
-        if body:find("AUTH_SUCCESS") then
-            if not isfolder("auraware/wf") then makefolder("auraware/wf") end
-            local jsonData = body:split("|")[2]
-            writefile(infoPath, jsonData)
-            return "Аккаунт успешно привязан!"
-        end
-        
-        -- Пытаемся декодировать JSON ответ
-        local ok, decoded = pcall(function() return HttpService:JSONDecode(body) end)
-        if ok then
-            return decoded.url or decoded.message or body
-        end
-        return body
-    else
-        return "Ошибка сети: " .. tostring(response.Body or "Unknown Error")
-    end
-end
-
-local function getCreds()
-    if isfile(infoPath) then
-        return HttpService:JSONDecode(readfile(infoPath))
-    end
-    return {}
-end
-
--- Команды
 function wf.register(user, pass)
-    local payload = {
-        command = string.format("create account\nusername = %s\npassword = %s", user, pass)
+    local data = {
+        command = "create account", -- Передаем команду отдельно, если нужно
+        user = user, 
+        pass = pass
     }
-    print("[WF]: Регистрация на сервере...")
-    print(send("https://weh-face.vercel.app/register", payload))
-end
-
-function wf.add(path, content)
-    local creds = getCreds()
-    local payload = {
-        command = string.format("add file %s =\n%s", path, content),
-        user = creds.username,
-        pass = creds.password
-    }
-    print("[WF]: Загрузка в репозиторий...")
-    print(send("https://weh-face.vercel.app/execute", payload))
+    print("[WF]: Отправка регистрации...")
+    local res = internal_request("https://weh-face.vercel.app/register", data)
+    
+    if res.Success then
+        if res.Body:find("AUTH_SUCCESS") then
+            if not isfolder("auraware/wf") then makefolder("auraware/wf") end
+            local jsonData = res.Body:split("|")[2]
+            writefile(infoPath, jsonData)
+            print("[WF]: Успех! Аккаунт привязан.")
+        else
+            print("[WF Server]: " .. tostring(res.Body))
+        end
+    else
+        print("[WF Error]: " .. tostring(res.Body))
+    end
 end
 
 _G.wf = wf
-print("[WF]: Ядро (v2) загружено через request()")
