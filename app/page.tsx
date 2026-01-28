@@ -1,45 +1,41 @@
 import { getRepoContent } from '@/lib/github';
-import { uploadToGithub, createFolder } from './actions';
+import Link from 'next/link';
 
-export default async function RepoPage({ searchParams }: { searchParams: { path?: string } }) {
-  const currentPath = searchParams.path || '';
-  const contents = await getRepoContent(currentPath);
+export default async function Dashboard() {
+  // Получаем содержимое папки /data, где лежат наши "репозитории"
+  const projects = await getRepoContent('data');
 
   return (
-    <div className="max-w-4xl mx-auto p-6 font-sans">
-      <h1 className="text-2xl font-bold mb-4">My Personal Repo: /{currentPath}</h1>
+    <div className="min-h-screen bg-white text-slate-900 p-8">
+      <div className="max-w-6xl mx-auto">
+        <header className="flex justify-between items-center mb-10">
+          <h1 className="text-3xl font-bold tracking-tight">My Hosting Hub</h1>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            + New Project
+          </button>
+        </header>
 
-      {/* Кнопки управления */}
-      <div className="flex gap-4 mb-6 p-4 border rounded-md bg-gray-50">
-        <form action={async (formData) => {
-          'use server';
-          const name = formData.get('folderName') as string;
-          await createFolder(name, currentPath);
-        }}>
-          <input name="folderName" placeholder="New folder name" className="border p-1 mr-2" />
-          <button className="bg-green-600 text-white px-3 py-1 rounded">Create Folder</button>
-        </form>
-      </div>
-
-      {/* Список файлов */}
-      <div className="border rounded-md overflow-hidden">
-        <div className="bg-gray-100 p-2 border-b text-sm text-gray-600">Files</div>
-        {Array.isArray(contents) && contents.map((item: any) => (
-          <div key={item.sha} className="flex items-center justify-between p-3 border-b last:border-0 hover:bg-gray-50">
-            <div className="flex items-center gap-2">
-              {item.type === 'dir' ? '📁' : '📄'}
-              <a 
-                href={item.type === 'dir' ? `?path=${item.path}` : item.download_url} 
-                className="text-blue-600 hover:underline"
-              >
-                {item.name}
-              </a>
-            </div>
-            <div className="text-xs text-gray-400">
-              {item.type !== 'dir' && <a href={`/api/raw/${item.path}`}>Raw</a>}
-            </div>
-          </div>
-        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.isArray(projects) && projects.map((project: any) => (
+            <Link 
+              key={project.sha} 
+              href={`/repo/${project.name}`}
+              className="group border border-slate-200 p-6 rounded-xl hover:border-blue-500 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center mb-3">
+                <span className="text-2xl mr-2">📦</span>
+                <h2 className="font-semibold text-xl group-hover:text-blue-600">{project.name}</h2>
+              </div>
+              <p className="text-sm text-slate-500 mb-4">
+                Manage files, releases and edits for this repository.
+              </p>
+              <div className="flex items-center text-xs text-slate-400">
+                <span className="mr-3">Updated: Recently</span>
+                <span>Public</span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
