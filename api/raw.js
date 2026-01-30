@@ -3,20 +3,41 @@ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 export default async function handler(req, res) {
     const { path } = req.query;
-    // Магия: принудительно ищем в res/data/
-    const gitHubPath = `res/data/${path}`;
+    if (!path) return res.status(400).send("No path provided");
 
     try {
-        const { data } = await octokit.repos.getContent({
+        // 1. Получаем метаданные файла
+        const { data: fileData } = await octokit.repos.getContent({
             owner: "lixeal",
             repo: "weh-face",
-            path: gitHubPath,
+            path: `res/data/${path}`,
         });
 
-        const content = Buffer.from(data.content, 'base64').toString('utf-8');
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.status(200).send(content);
+        // 2. Если файл больше 1Мб, используем SHA для получения Blob
+        const { data: blobData } = await octokit.git.getBlob({
+            owner: "lixeal",
+            repo: "weh-face",
+            file_sha: fileData.sha,
+        });
+
+        const buffer = Buffer.from(blobData.content, 'base64');
+
+        // 3. Определяем тип контента
+        const extension = path.split('.').pop().toLowerCase();
+        const types = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'lua': 'text/plain; charset=utf-8'
+        };
+
+        res.setHeader('Content-Type', types[extension] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // Кэш на час для экономии лимитов
+        
+        res.status(200).send(buffer);
     } catch (e) {
-        res.status(404).send(`-- File [${path}] not found in res/data/`);
+        console.error(e);
+        res.status(404).send(`Error: ${e.message}`);
     }
 }
