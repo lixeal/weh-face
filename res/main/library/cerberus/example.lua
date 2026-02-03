@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Jxereas/UI-Libraries/main/cerberus.lua"))()
+local Library = loadstring(game:HttpGet("https://wehface.vercel.app/library/cerberus/source"))()
 
 local window = Library.new("Window") -- Args(<string> Name, <boolean?> ConstrainToScreen, <number?> Width, <number?> Height, <string?> VisibilityToggleKey)
 
