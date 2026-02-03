@@ -69,7 +69,7 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
     end
     
     local old
-    old = hookfunc(ContentProvider.PreloadAsync, function(self, tbl, cb)
+    old = hookfunction(ContentProvider.PreloadAsync, function(self, tbl, cb)
         if self ~= ContentProvider or type(tbl) ~= "table" or type(cb) ~= "function" then --note: callback can be nil but in that case it's useless anyways
             return old(self, tbl, cb)
         end
