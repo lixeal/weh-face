@@ -361,7 +361,7 @@ local function createOriginialElements()
 		title.Font = Enum.Font.GothamBold
 		title.LineHeight = 0.800
 		title.Text = "Cerberus"
-		title.TextColor3 = Color3.fromRGB(255, 255, 255)
+		title.TextColor3 = Color3.fromRGB(214, 142, 250)
 		title.TextSize = 14.000
 		title.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -560,7 +560,7 @@ local function createOriginialElements()
 		title.Size = UDim2.new(1, -20, 0, 20)
 		title.Font = Enum.Font.GothamMedium
 		title.Text = "N/A"
-		title.TextColor3 = Color3.fromRGB(214, 142, 250)
+		title.TextColor3 = Color3.fromRGB(255, 255, 255)
 		title.TextSize = 14.000
 		title.TextXAlignment = Enum.TextXAlignment.Left
 		title.ClipsDescendants = true
