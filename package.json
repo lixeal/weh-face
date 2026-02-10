@@ -1,8 +1,9 @@
 {
-  "name": "weh-face-backend",
+  "name": "vexpass-backend",
   "version": "1.0.0",
+  "main": "api/raw.js",
   "dependencies": {
     "@octokit/rest": "^20.0.0",
-    "bcryptjs": "^2.4.3"
+    "node-fetch": "^3.3.2"
   }
 }
