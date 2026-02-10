@@ -1,121 +1,104 @@
 import { Octokit } from "@octokit/rest";
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK;
 const OWNER = "lixeal";
-const REPO = "weh-face";
+const REPO = "vexpass";
+
+const CIS_COUNTRIES = ['RU', 'UA', 'BY', 'KZ', 'AM', 'AZ', 'GE', 'MD', 'KG', 'TJ', 'UZ', 'TM'];
 
 async function getGeo(ip) {
     try {
-        const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,city,isp`);
+        const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,countryCode`);
         return await res.json();
     } catch (e) { return null; }
 }
 
-async function sendToDiscord(host, path, ua, ip, geoData) {
-    if (!WEBHOOK_URL) return;
-    
-    const geoString = geoData ? `**Location:** ${geoData.country}, ${geoData.city}\n**ISP:** ${geoData.isp}` : "Unknown";
-
-    const embed = {
-        title: "🛡 Access Blocked",
-        color: 0xff4141,
-        fields: [
-            { name: "🌐 Domain", value: `\`${host}\``, inline: true },
-            { name: "📁 File", value: `\`${path}\``, inline: true },
-            { name: "👤 User-Agent", value: `\`\`\`${ua}\`\`\`` },
-            { name: "📍 IP Info", value: `**IP:** ${ip}\n${geoString}` }
-        ],
-        footer: { text: "WEH-FACE Security Center" },
-        timestamp: new Date()
-    };
-
-    await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: "vexpass protector", embeds: [embed] })
-    }).catch(() => {});
-}
-
 export default async function handler(req, res) {
-    const host = req.headers.host || ""; 
+    const host = req.headers.host || "";
     const userAgent = req.headers['user-agent'] || "";
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const ip = rawIp.split(',')[0].trim();
     
-    let { path } = req.query;
-    if (!path) return res.status(400).send("No path provided");
-    path = path.split('#')[0].split('?')[0];
+    let { path: requestedPath } = req.query;
+    if (!requestedPath) return res.status(400).send("No path");
+    const cleanPath = requestedPath.split('#')[0].split('?')[0].replace(/\.[^/.]+$/, "");
 
-    // --- 1. ИГНОРИРОВАНИЕ МУСОРА ---
-    const ignoredFiles = ['favicon.ico', 'robots.txt', 'sitemap.xml'];
-    if (ignoredFiles.includes(path) || path.endsWith('.png') || path.endsWith('.ico')) {
-        return res.status(404).send("Not Found");
-    }
+    // --- 1. МАРШРУТИЗАЦИЯ ПО БРАНЧАМ И ИКОНКАМ ---
+    let targetBranch = "off";
+    let iconName = "vexpass.svg";
 
-    // --- 2. БЕЛЫЙ СПИСОК IP (Твой диапазон 77.52.212.*) ---
-    const isWhiteListed = ip.startsWith("77.52.212.");
-
-    // --- 3. ЛОГИКА ПАПОК ---
-    let folder = "res/data"; // По умолчанию для raw-wf и raw-wehface
-    if (host.includes("cdn-")) {
-        folder = "res/cdn";
+    if (host.includes("raw")) {
+        targetBranch = "raw";
+        iconName = "ScriptProtector.svg";
+    } else if (host.includes("cdn")) {
+        targetBranch = "cdn";
+        iconName = "vexpass.svg";
     } else if (host.includes("api")) {
-        folder = "res/api";
-    } else if (host === "wehface.vercel.app" || host === "weh-face.vercel.app") {
-        folder = "res/main";
+        targetBranch = "api";
+        iconName = "vexpass.svg";
+    } else if (host.includes("test")) {
+        targetBranch = "testing";
+        iconName = "test-vexpass.svg";
     }
 
-    // --- 4. ЗАЩИТА ВСЕХ ДОМЕНОВ ---
+    // --- 2. ГЕО И ЯЗЫК ---
+    const geoData = await getGeo(ip);
+    const lang = (geoData && CIS_COUNTRIES.includes(geoData.countryCode)) ? "RU" : "EN";
+
     const isRoblox = userAgent.includes("Roblox");
 
-    if (!isRoblox) {
-        const geoData = await getGeo(ip);
-
-        // Отправляем в Дискорд только если IP НЕ в белом списке
-        if (!isWhiteListed) {
-            await sendToDiscord(host, path, userAgent, ip, geoData);
-        }
-
-        // Вывод красивой карточки человеку
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.status(403).send(`
-            <html>
-                <head><title>Access Blocked</title>
-                <style>
-                    body { background: #0b0b0b; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                    .embed { background: #2b2d31; border-left: 4px solid #ff4141; border-radius: 4px; padding: 16px; width: 432px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-                    .title { font-weight: bold; font-size: 16px; margin-bottom: 8px; }
-                    .field { margin-bottom: 12px; }
-                    .label { color: #b5bac1; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
-                    .value { color: #dbdee1; font-size: 14px; background: #1e1f22; padding: 4px 6px; border-radius: 4px; font-family: monospace; display: block; }
-                    .footer { color: #949ba4; font-size: 11px; margin-top: 12px; border-top: 1px solid #3f4147; padding-top: 8px; }
-                </style></head>
-                <body>
-                    <div class="embed">
-                        <div class="title">🛡 Access Blocked</div>
-                        <div class="field"><div class="label">Domain</div><div class="value">${host}</div></div>
-                        <div class="field"><div class="label">File</div><div class="value">${path}</div></div>
-                        <div class="field"><div class="label">IP Information</div><div style="font-size: 14px;"><b>IP:</b> ${ip}<br><b>Location:</b> ${geoData?.country || 'Unknown'}, ${geoData?.city || 'Unknown'}</div></div>
-                        <div class="footer">VEXPAsS Cloud Security • ${new Date().toLocaleTimeString()}</div>
-                    </div>
-                </body>
-            </html>
-        `);
+    // --- 3. ВЫДАЧА ИКОНОК (Если запрос идет из HTML) ---
+    if (requestedPath.startsWith("favicon/")) {
+        try {
+            const { data: iconFile } = await octokit.repos.getContent({
+                owner: OWNER, repo: REPO, path: `site/favicon/${iconName}`, ref: "main"
+            });
+            res.setHeader('Content-Type', 'image/svg+xml');
+            return res.status(200).send(Buffer.from(iconFile.content, 'base64').toString('utf-8'));
+        } catch (e) { return res.status(404).end(); }
     }
 
-    // --- 5. ВЫДАЧА ФАЙЛА ДЛЯ ROBLOX ---
-    if (!path.includes(".")) path += ".lua";
+    // --- 4. ЛОГИКА ДЛЯ БРАУЗЕРА (HTML) ---
+    if (!isRoblox) {
+        let pageName = "main.html";
+        if (cleanPath === "links") pageName = "links.html";
+        else if (host.includes("test")) pageName = "test.html";
+        else if (targetBranch === "raw") pageName = "blocked.html";
 
+        try {
+            const { data: file } = await octokit.repos.getContent({
+                owner: OWNER, repo: REPO, path: `site/html/${pageName}`, ref: "main"
+            });
+            let html = Buffer.from(file.content, 'base64').toString('utf-8');
+
+            // Динамическая вставка данных в HTML
+            html = html.replace(/{{LANG}}/g, lang);
+            html = html.replace(/{{ICON_PATH}}/g, `/api/raw?path=favicon/${iconName}`);
+            
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.status(200).send(html);
+        } catch (e) {
+            return res.status(404).send("VexPass: Page not found");
+        }
+    }
+
+    // --- 5. ВЫДАЧА КОДА (ROBLOX) ---
     try {
-        const { data: fileData } = await octokit.repos.getContent({ owner: OWNER, repo: REPO, path: `${folder}/${path}` });
-        const { data: blobData } = await octokit.git.getBlob({ owner: OWNER, repo: REPO, file_sha: fileData.sha });
-        const buffer = Buffer.from(blobData.content, 'base64');
+        const { data: repoFiles } = await octokit.repos.getContent({
+            owner: OWNER, repo: REPO, path: "", ref: targetBranch
+        });
+
+        const targetFile = repoFiles.find(f => f.name.replace(/\.[^/.]+$/, "") === cleanPath);
+        if (!targetFile) throw new Error();
+
+        const { data: blob } = await octokit.git.getBlob({
+            owner: OWNER, repo: REPO, file_sha: targetFile.sha
+        });
 
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.status(200).send(buffer.toString('utf8'));
+        return res.status(200).send(Buffer.from(blob.content, 'base64').toString('utf-8'));
     } catch (e) {
-        res.status(404).send(`-- Error: File [${path}] not found in /${folder}/`);
+        return res.status(404).send(`-- VexPass Error: [${cleanPath}] not found in branch [${targetBranch}]`);
     }
 }
