@@ -16,29 +16,21 @@ local Library = {
 		ReqPlaceID = 0
     },
     {
-        Class = "Head",
-        Name = "SleekTiredG",
-        MeshID = "rbxassetid://96040719638479",
-        TextureID = "rbxassetid://108395821618310",
-        Scale = Vector3.new(1.0, 1.0, 1.0),
-		ReqPlaceID = 0
+        Class = "Accessory",
+        Name = "BackTail",
+        Weld = "Torso",
+        MeshID = "rbxassetid://85052393126449",
+        Texture = "rbxassetid://76742493960027",
+        CFrame = CFrame.new(0, 0.7, -0.7) * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
+        ReqPlaceID = 0
     },
     {
         Class = "Accessory",
         Name = "TTBack",
         Weld = "Torso",
-        MeshID = "rbxassetid://85052393126449",
-        Texture = "rbxassetid://76742493960027",
-        CFrame = CFrame.new(0, -0.5, 0.8) * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
-        ReqPlaceID = 0
-    },
-    {
-        Class = "Accessory",
-        Name = "BackTail",
-        Weld = "Torso",
         MeshID = "rbxassetid://102535235285318",
         Texture = "rbxassetid://132597092841215",
-        CFrame = CFrame.new(0, -0.5, 0.8) * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
+        CFrame = CFrame.new(0, 0.7, -0.8) * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
         ReqPlaceID = 0
     },
     {
