@@ -20,14 +20,13 @@ export default async function handler(req, res) {
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const ip = rawIp.split(',')[0].trim();
     
-    let { path: requestedPath } = req.query;
-    if (!requestedPath) return res.status(400).send("No path");
-
+    // ИСПРАВЛЕНО: Теперь если пути нет, скрипт не падает, а считает его пустым
+    let requestedPath = req.query.path || ""; 
     const cleanPath = requestedPath.split('#')[0].split('?')[0].replace(/\.[^/.]+$/, "");
 
     // --- 1. ОПРЕДЕЛЕНИЕ ВЕТКИ И ИКОНКИ ---
     let targetBranch = "off";
-    let iconName = "vexpass.svg"; // Иконка по умолчанию для главных страниц
+    let iconName = "vexpass.svg"; 
 
     if (host.includes("raw-vexpass")) targetBranch = "raw";
     else if (host.includes("cdn")) targetBranch = "cdn";
@@ -37,7 +36,7 @@ export default async function handler(req, res) {
         iconName = "test-vexpass.svg";
     }
 
-    // Если в пути указан конкретный файл (например /script), всегда ставим щит
+    // Если запрошен конкретный файл — ставим щит
     if (cleanPath !== "" && cleanPath !== "links") {
         iconName = "ScriptProtector.svg";
     }
@@ -69,7 +68,7 @@ export default async function handler(req, res) {
         } else if (targetBranch === "testing" && cleanPath === "") {
             pageName = "test.html";
         } else if (cleanPath !== "") {
-            // Если человек пытается открыть файл напрямую
+            // Если человек ввел путь к файлу — показываем main.html (письмо о закрытии)
             pageName = "main.html"; 
             isFileRequest = true;
         }
@@ -80,7 +79,7 @@ export default async function handler(req, res) {
             });
             let html = Buffer.from(file.content, 'base64').toString('utf-8');
 
-            // Название вкладки: если это запрос к файлу — ставим невидимый символ (U+200E)
+            // Название вкладки: пустое для файлов, VEXPASS для сайтов
             const title = isFileRequest ? "&#x200E;" : "VEXPASS";
             
             html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
@@ -90,7 +89,7 @@ export default async function handler(req, res) {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(html);
         } catch (e) {
-            return res.status(404).send("System error");
+            return res.status(404).send("System error: HTML not found in main branch");
         }
     }
 
