@@ -8,42 +8,41 @@
     <style>
         body {
             margin: 0; padding: 0;
-            background-color: #0b0b0b;
-            /* Твой топографический фон */
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='800' viewBox='0 0 800 800'%3E%3Cpath d='M760 120c-40 0-60-20-60-40s-20-40-60-40-60 20-60 40-20 40-60 40-60-20-60-40-20-40-60-40-60 20-60 40-20 40-60 40-60-20-60-40-20-40-60-40-60 20-60 40-20 40-60 40' fill='none' stroke='%231a1a1a' stroke-width='1'/%3E%3Cpath d='M0 300c40 0 60 20 60 40s20 40 60 40 60-20 60-40 20-40 60-40 60 20 60 40 20 40 60 40 60-20 60-40 20-40 60-40 60 20 60 40 20 40 60 40 60-20 60-40 20-40 60-40 60 20 60 40' fill='none' stroke='%23161616' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-color: #323232; /* Цвет из topo.txt */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Cpath fill='%23888888' fill-opacity='0.15' d='M600 325.1v-1.17c-6.5 3.83-13.06 7.64-14.68 8.64-10.6 6.56-18.57 12.56-24.68 19.09-5.58 5.95-12.44 10.06-22.42 14.15-1.45.6-2.96 1.2-4.83 1.9l-4.75 1.82c-9.78 3.75-14.8 6.27-18.98 10.1-4.23 3.88-9.65 6.6-16.77 8.84-1.95.6-3.99 1.17-6.47 1.8l-6.14 1.53c-5.29 1.35-8.3 2.37-10.54 3.78'/%3E%3C/svg%3E"); 
+            /* Я подставил часть твоего SVG для примера, вставь полный path из topo.txt в url */
             color: #d1d1d1;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex; justify-content: flex-start; align-items: center;
-            height: 100vh;
+            height: 100vh; overflow: hidden;
         }
         .content { max-width: 600px; margin-left: 10%; padding: 20px; }
-        h1 { color: white; font-size: 42px; letter-spacing: 2px; margin-bottom: 30px; }
-        p { line-height: 1.6; font-size: 15px; margin-bottom: 20px; }
+        h1 { color: white; font-size: 42px; letter-spacing: 2px; margin-bottom: 30px; display: flex; align-items: center; }
+        h1 span { color: #ff4141; margin-right: 10px; }
+        p { line-height: 1.6; font-size: 15px; margin-bottom: 20px; } /* Размер текста как в оригинале */
         a { color: white; text-decoration: underline; transition: 0.3s; }
         a:hover { color: #888; }
-        .signature { margin-top: 40px; }
+        .signature { margin-top: 40px; font-size: 15px; }
         .footer-link {
             display: inline-block; margin-top: 30px;
-            border: 1px solid #333; padding: 5px 15px;
+            border: 1px solid #444; padding: 5px 15px;
             border-radius: 3px; font-size: 13px;
             background: rgba(255,255,255,0.02);
         }
-        /* Кнопка языков */
         .lang-switcher {
             position: fixed; bottom: 20px; left: 20px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(5px);
             padding: 8px 12px; border-radius: 4px; font-size: 12px;
-            border: 1px solid #222; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
         }
         .active { color: white; font-weight: bold; }
-        .inactive { color: #444; }
+        .inactive { color: #777; }
     </style>
 </head>
 <body>
     <div class="content">
         <h1>VEXPASS</h1>
         <div id="text-container"></div>
-        
         <div class="signature" id="sig-container"></div>
         <div class="footer-link">dxbreaksoftware</div>
     </div>
@@ -54,22 +53,21 @@
 
     <script>
         const lang = "{{LANG}}";
-        const content = {
+        const translations = {
             RU: {
                 p1: "<strong>Давайте сразу к делу:</strong> мы больше не будем предлагать услуги VEXPASS. Мы прекратили поддержку сервисов с момента публикации этого объявления, и все данные пользователей были удалены.",
-                p2: "VEXPASS был важен для роста нашей команды, но стало ясно, что нам нужно расширять горизонты и двигаться дальше. Сейчас вы можете узнать больше в нашем сообществе: <a href='https://discord.gg/TRPZg4Xfkq'>https://discord.gg/TRPZg4Xfkq</a>",
-                p3: "Мы хотим поблагодарить наших пользователей за их поддержку. Для нас было удовольствием служить вам. Мы в восторге от того, что готовит будущее.",
+                p2: "VEXPASS был важен для роста нашей команды, но стало ясно, что нам нужно расширять горизонты. Сейчас вы можете узнать больше в нашем сообществе: <a href='https://discord.gg/FGXGdVxbue'>https://discord.gg/FGXGdVxbue</a>",
+                p3: "Мы хотим поблагодарить наших пользователей за их поддержку и понимание на протяжении всех этих лет.",
                 sig: "Искренне,<br><strong>Команда DxBreak.</strong>"
             },
             EN: {
                 p1: "<strong>Let's get straight to the point:</strong> we will no longer be offering VEXPASS services. We have ceased support for all services effective immediately, and all user data has been deleted.",
-                p2: "VEXPASS was vital to our growth, but it's time to move forward. We are currently working on ambitious new projects. Learn more in our community: <a href='https://discord.gg/TRPZg4Xfkq'>https://discord.gg/TRPZg4Xfkq</a>",
-                p3: "We want to thank our users for their support over the years. It has been a pleasure to serve you all. We are excited for what the future holds.",
+                p2: "VEXPASS was vital to our growth, but it's time to move forward. You can find more info in our community: <a href='https://discord.gg/FGXGdVxbue'>https://discord.gg/FGXGdVxbue</a>",
+                p3: "We want to thank our users for their support and understanding throughout all these years.",
                 sig: "Sincerely,<br><strong>DxBreak Team.</strong>"
             }
         };
-
-        const t = content[lang];
+        const t = translations[lang] || translations.EN;
         document.getElementById('text-container').innerHTML = `<p>${t.p1}</p><p>${t.p2}</p><p>${t.p3}</p>`;
         document.getElementById('sig-container').innerHTML = t.sig;
         document.getElementById('l-ru').className = lang === 'RU' ? 'active' : 'inactive';
