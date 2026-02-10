@@ -16,6 +16,50 @@ local Library = {
 		ReqPlaceID = 0
     },
     {
+        Class = "Head",
+        Name = "BoredMOE",
+        MeshID = "rbxassetid://82135150215758",
+        TextureID = "rbxassetid://77885674031737",
+        Scale = Vector3.new(1.0, 1.0, 1.0),
+		ReqPlaceID = 0
+    },
+    {
+        Class = "Accessory",
+        Name = "FaceBlindFold",
+        Weld = "Head",
+        MeshID = "rbxassetid://120177601931635",
+        Texture = "rbxassetid://111644589425325",
+        CFrame = CFrame.new(0, -0.2, 0) * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
+        ReqPlaceID = 0
+    },
+    {
+        Class = "Accessory",
+        Name = "Cap",
+        Weld = "Head",
+        MeshID = "rbxassetid://92976453142475",
+        Texture = "rbxassetid://84600492178264",
+        CFrame = CFrame.new(0, -0.4, -0.05) * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
+        ReqPlaceID = 0
+    },
+    {
+        Class = "Accessory",
+        Name = "",
+        Weld = "",
+        MeshID = "",
+        Texture = "",
+        CFrame = CFrame.new() * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
+        ReqPlaceID = 0
+    },
+    {
+        Class = "Accessory",
+        Name = "",
+        Weld = "",
+        MeshID = "",
+        Texture = "",
+        CFrame = CFrame.new() * CFrame.fromEulerAnglesXYZ(math.rad(0), math.rad(0), math.rad(0)),
+        ReqPlaceID = 0
+    },
+    {
         Class = "Accessory",
         Name = "BackTail",
         Weld = "Torso",
