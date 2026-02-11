@@ -18,7 +18,7 @@ export default async function logAccess({ host, ip, userAgent, file }) {
                         },
                         { name: "IP", value: `\`${ip}\`` }
                     ],
-                    footer: { text: "WEH-FACE Security Center" },
+                    footer: { text: "vexpass protector" },
                     timestamp: new Date().toISOString()
                 }
             ]
