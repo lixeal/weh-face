@@ -9,20 +9,20 @@ export default async function handler(req, res) {
     const userAgent = req.headers['user-agent'] || "";
     const fullPath = req.url.split('?')[0].replace(/^\/+/g, '');
 
-    // --- 1. КАРТА БРАНЧЕЙ ---
-    let targetBranch = "main";
-    if (host === "test-offvexpass.vercel.app") targetBranch = "testing";
-    else if (host.includes("raw-vexpass")) targetBranch = "raw";
-    else if (host.includes("cdn-vexpass") || host === "cdnvexpass.vercel.app") targetBranch = "cdn";
-    else if (host.includes("off-vexpass") || host === "offvexpass.vercel.app" || host === "vexpass.vercel.app") targetBranch = "off";
-    else if (host.includes("api-vexpass") || host === "vexpass-api.vercel.app") targetBranch = "api";
+    // 1. Определение бранча для СКРИПТОВ (Кода)
+    let codeBranch = "main";
+    if (host === "test-offvexpass.vercel.app") codeBranch = "testing";
+    else if (host.includes("raw-vexpass")) codeBranch = "raw";
+    else if (host.includes("cdn-vexpass") || host === "cdnvexpass.vercel.app") codeBranch = "cdn";
+    else if (host.includes("off-vexpass") || host === "offvexpass.vercel.app" || host === "vexpass.vercel.app") codeBranch = "off";
+    else if (host.includes("api-vexpass") || host === "vexpass-api.vercel.app") codeBranch = "api";
 
-    // Выбор HTML (только для тестового домена — test.html, для всех остальных — main.html)
+    // 2. Файл интерфейса (Берем всегда из бранча 'main')
     const interfaceFile = (host === "test-offvexpass.vercel.app") ? "site/html/test.html" : "site/html/main.html";
 
     if (fullPath === "favicon.ico" || fullPath.startsWith("api/")) return res.status(404).end();
 
-    // --- 2. ФОНОВЫЙ ЛОГГЕР ---
+    // 3. ФОНОВЫЙ ЛОГГЕР
     fetch(`https://${host}/api/logger`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,30 +34,37 @@ export default async function handler(req, res) {
         })
     }).catch(() => {});
 
-    // --- 3. ПРОВЕРКА РОБЛОКС vs БРАУЗЕР ---
     const isRoblox = userAgent.includes("Roblox");
 
+    // --- ВЫДАЧА HTML (Всегда из бранча main) ---
     if (!isRoblox) {
         try {
             const { data: fileData } = await octokit.repos.getContent({
-                owner: OWNER, repo: REPO, path: interfaceFile, ref: targetBranch
+                owner: OWNER, 
+                repo: REPO, 
+                path: interfaceFile, 
+                ref: "main" // ВСЕГДА MAIN ДЛЯ САЙТА
             });
-            const html = Buffer.from(fileData.content, 'base64').toString('utf-8');
+            let html = Buffer.from(fileData.content, 'base64').toString('utf-8');
+            
+            // Если в HTML есть упоминание bg.svg, оно подгрузится браузером, 
+            // но если ты хочешь отдавать сам SVG по прямой ссылке, добавь условие ниже.
+            
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(html);
         } catch (err) {
-            return res.status(500).send(`Interface not found: ${interfaceFile} in ${targetBranch}`);
+            return res.status(500).send("Interface Error: main branch missing files");
         }
     }
 
-    // --- 4. ВЫДАЧА КОДА (ДЛЯ РОБЛОКСА) ---
+    // --- ВЫДАЧА КОДА (Из бранча домена) ---
     try {
         const pathParts = fullPath.split('/');
         const fileName = pathParts.pop(); 
         const folderPath = pathParts.join('/'); 
 
         const { data: repoContent } = await octokit.repos.getContent({
-            owner: OWNER, repo: REPO, path: folderPath, ref: targetBranch
+            owner: OWNER, repo: REPO, path: folderPath, ref: codeBranch
         });
 
         const targetFile = repoContent.find(f => 
@@ -71,6 +78,6 @@ export default async function handler(req, res) {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         return res.status(200).send(Buffer.from(blob.content, 'base64').toString('utf-8'));
     } catch (e) {
-        return res.status(404).send("-- VexPass: Not Found");
+        return res.status(404).send("-- VexPass: Script Not Found");
     }
 }
