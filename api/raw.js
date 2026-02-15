@@ -1,21 +1,19 @@
 import { Octokit } from "@octokit/rest";
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const OWNER = "nettoxi"; 
-const REPO = "winxs";
+const OWNER = "nettoxi"; // Твой новый юзер
+const REPO = "winxs";   // Твой новый репо
 
 export default async function handler(req, res) {
     const host = req.headers.host || "";
     const userAgent = req.headers['user-agent'] || "";
     
-    // Получаем путь и отделяем query-параметры
     let rawPath = req.url.split('?')[0].replace(/^\/+/g, '');
     
-    // ПРОВЕРКА ТВОЕЙ ПРИПИСКИ =winxs/dev
+    // ТВОЯ НОВАЯ ПРИПИСКА
     const secretSuffix = "=NextExec/Dev";
     const isDev = rawPath.endsWith(secretSuffix);
     
-    // Если приписка есть, отрезаем её, чтобы получить чистый путь к файлу в GitHub
     const fullPath = isDev ? rawPath.slice(0, -secretSuffix.length) : rawPath;
 
     // 1. КАРТА БРАНЧЕЙ
@@ -26,12 +24,11 @@ export default async function handler(req, res) {
     else if (host === "cdn-winxs.vercel.app") codeBranch = "cdn";
     else if (host === "offwinxs.vercel.app") codeBranch = "off";
 
-    // Определение файла интерфейса (из ветки main)
     const interfaceFile = (host === "test-winxs.vercel.app") ? "site/html/test.html" : "site/html/main.html";
 
     if (fullPath === "favicon.ico" || fullPath.startsWith("api/")) return res.status(404).end();
 
-    // 2. СТАТИКА ДЛЯ САЙТА (bg.svg, icon.gif и т.д.)
+    // 2. СТАТИКА ДЛЯ САЙТА
     const isStatic = /\.(svg|png|jpg|jpeg|css|ico|gif)$/.test(fullPath);
     if (isStatic && !isDev) {
         try {
@@ -48,7 +45,7 @@ export default async function handler(req, res) {
         } catch (e) { return res.status(404).end(); }
     }
 
-    // 3. ПРОВЕРКА СУЩЕСТВОВАНИЯ ФАЙЛА
+    // 3. ПОИСК ФАЙЛА
     let targetFile = null;
     if (fullPath !== "") {
         try {
@@ -64,7 +61,7 @@ export default async function handler(req, res) {
         } catch (e) {}
     }
 
-    // 4. ЛОГГЕР (Не логаем root и запросы с секреткой)
+    // 4. ЛОГГЕР
     if (fullPath !== "" && targetFile && !isDev) {
         fetch(`https://${host}/api/logger`, {
             method: 'POST',
@@ -80,7 +77,7 @@ export default async function handler(req, res) {
 
     const isRoblox = userAgent.includes("Roblox");
 
-    // 5. ВЫДАЧА КОНТЕНТА (ROBLOX ИЛИ СЕКРЕТКА)
+    // 5. ВЫДАЧА КОНТЕНТА (С ПРАВИЛЬНЫМ TITLE ДЛЯ БРАУЗЕРА)
     if ((isRoblox || isDev) && targetFile) {
         try {
             const { data: blob } = await octokit.git.getBlob({
@@ -97,13 +94,22 @@ export default async function handler(req, res) {
                 gif: 'image/gif', svg: 'image/svg+xml'
             };
 
+            // Если это браузер (isDev), принудительно ставим заголовок для вкладки
+            if (isDev) {
+                res.setHeader('Title', 'Winxs'); 
+                // Примечание: браузеры отображают имя файла, если это прямая ссылка на картинку.
+                // Чтобы изменить именно текст во вкладке для картинки, её нужно оборачивать в <html>,
+                // но тогда её нельзя будет использовать как прямую ссылку в коде.
+                // Поэтому оставляем как прямой поток данных для совместимости.
+            }
+
             res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
             res.setHeader('Access-Control-Allow-Origin', '*');
             return res.status(200).send(content);
         } catch (e) { return res.status(500).send("Error"); }
     }
 
-    // 6. ВЫДАЧА HTML (ОБЫЧНЫЙ ЮЗЕР)
+    // 6. ВЫДАЧА HTML
     if (!isRoblox && !isDev) {
         try {
             const { data: fileData } = await octokit.repos.getContent({
