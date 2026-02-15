@@ -21,11 +21,18 @@ export default async function handler(req, res) {
     else if (host === "api-winxs.vercel.app") codeBranch = "api";
     else if (host === "cdn-winxs.vercel.app") codeBranch = "cdn";
     else if (host === "offwinxs.vercel.app") codeBranch = "off";
+    // Можно добавить ветку для статуса, если она отдельная, 
+    // но если всё в main, оставляем как есть.
 
-    const interfaceFile = (host === "test-winxs.vercel.app") ? "site/html/test.html" : "site/html/main.html";
+    // 2. ВЫБОР ФАЙЛА ИНТЕРФЕЙСА
+    let interfaceFile = "site/html/main.html"; // По умолчанию
+    if (host === "test-winxs.vercel.app") {
+        interfaceFile = "site/html/test.html";
+    } else if (host === "status-winxs.vercel.app") {
+        interfaceFile = "site/html/status.html";
+    }
 
     if (fullPath === "favicon.ico" || fullPath.startsWith("api/")) return res.status(404).end();
-
     // 2. СТАТИКА ДЛЯ САЙТА (Авто-подгрузка ресурсов интерфейса)
     const isStatic = /\.(svg|png|jpg|jpeg|css|ico|gif)$/.test(fullPath);
     if (isStatic && !isDev) {
