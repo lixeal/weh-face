@@ -1,8 +1,8 @@
 import { Octokit } from "@octokit/rest";
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const OWNER = "nettoxi"; // Твой новый юзер
-const REPO = "winxs";   // Твой новый репо
+const OWNER = "nettoxi"; 
+const REPO = "winxs";
 
 export default async function handler(req, res) {
     const host = req.headers.host || "";
@@ -10,10 +10,8 @@ export default async function handler(req, res) {
     
     let rawPath = req.url.split('?')[0].replace(/^\/+/g, '');
     
-    // ТВОЯ НОВАЯ ПРИПИСКА
     const secretSuffix = "=NextExec/Dev";
     const isDev = rawPath.endsWith(secretSuffix);
-    
     const fullPath = isDev ? rawPath.slice(0, -secretSuffix.length) : rawPath;
 
     // 1. КАРТА БРАНЧЕЙ
@@ -28,7 +26,7 @@ export default async function handler(req, res) {
 
     if (fullPath === "favicon.ico" || fullPath.startsWith("api/")) return res.status(404).end();
 
-    // 2. СТАТИКА ДЛЯ САЙТА
+    // 2. СТАТИКА ДЛЯ САЙТА (Авто-подгрузка ресурсов интерфейса)
     const isStatic = /\.(svg|png|jpg|jpeg|css|ico|gif)$/.test(fullPath);
     if (isStatic && !isDev) {
         try {
@@ -45,7 +43,7 @@ export default async function handler(req, res) {
         } catch (e) { return res.status(404).end(); }
     }
 
-    // 3. ПОИСК ФАЙЛА
+    // 3. ПОИСК ФАЙЛА В НУЖНОМ БРАНЧЕ
     let targetFile = null;
     if (fullPath !== "") {
         try {
@@ -61,7 +59,7 @@ export default async function handler(req, res) {
         } catch (e) {}
     }
 
-    // 4. ЛОГГЕР
+    // 4. ЛОГГЕР (С фильтром root и дев-режима)
     if (fullPath !== "" && targetFile && !isDev) {
         fetch(`https://${host}/api/logger`, {
             method: 'POST',
@@ -77,7 +75,7 @@ export default async function handler(req, res) {
 
     const isRoblox = userAgent.includes("Roblox");
 
-    // 5. ВЫДАЧА КОНТЕНТА (С ПРАВИЛЬНЫМ TITLE ДЛЯ БРАУЗЕРА)
+    // 5. ВЫДАЧА КОНТЕНТА (ROBLOX ИЛИ СЕКРЕТКА)
     if ((isRoblox || isDev) && targetFile) {
         try {
             const { data: blob } = await octokit.git.getBlob({
@@ -94,22 +92,16 @@ export default async function handler(req, res) {
                 gif: 'image/gif', svg: 'image/svg+xml'
             };
 
-            // Если это браузер (isDev), принудительно ставим заголовок для вкладки
-            if (isDev) {
-                res.setHeader('Title', 'Winxs'); 
-                // Примечание: браузеры отображают имя файла, если это прямая ссылка на картинку.
-                // Чтобы изменить именно текст во вкладке для картинки, её нужно оборачивать в <html>,
-                // но тогда её нельзя будет использовать как прямую ссылку в коде.
-                // Поэтому оставляем как прямой поток данных для совместимости.
-            }
-
             res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
             res.setHeader('Access-Control-Allow-Origin', '*');
+            // Убираем лишние заголовки, чтобы браузер меньше "умничал" в названии вкладки
+            res.setHeader('Content-Disposition', 'inline'); 
+            
             return res.status(200).send(content);
-        } catch (e) { return res.status(500).send("Error"); }
+        } catch (e) { return res.status(500).send("Error fetching file"); }
     }
 
-    // 6. ВЫДАЧА HTML
+    // 6. ВЫДАЧА HTML (ОБЫЧНЫЙ ЮЗЕР)
     if (!isRoblox && !isDev) {
         try {
             const { data: fileData } = await octokit.repos.getContent({
@@ -120,7 +112,7 @@ export default async function handler(req, res) {
             html = html.replace(/{{LANG}}/g, selectedLang).replace(/{{BG_PATH}}/g, "/site/html/bg.svg");
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             return res.status(200).send(html);
-        } catch (err) { return res.status(500).send("Interface Error"); }
+        } catch (err) { return res.status(500).send("Interface missing in main branch"); }
     }
 
     return res.status(404).send("Not Found");
